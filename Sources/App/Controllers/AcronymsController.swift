@@ -97,11 +97,27 @@ struct AcronymsController: RouteCollection {
                             return acronym.categories.detach(category, on: req).transform(to: .noContent)
         }
     }
-        
+    
     func getMostRecentAcronyms(_ req: Request) throws -> Future<[Acronym]> {
         return Acronym.query(on: req)
-          .sort(\.updatedAt, .descending)
-          .all()
+            .sort(\.updatedAt, .descending)
+            .all()
+    }
+    
+    func getAcronymsWithUser(_ req: Request) throws -> Future<[AcronymWithUser]> {
+        return Acronym.query(on: req)
+            .join(\User.id, to: \Acronym.userID)
+            .alsoDecode(User.self).all()
+            .map(to: [AcronymWithUser].self) { acronymUserPairs in
+                acronymUserPairs
+                    .map { acronym, user -> AcronymWithUser in
+                        AcronymWithUser(
+                            id: acronym.id,
+                            short: acronym.short,
+                            long: acronym.long,
+                            user: user.convertToPublic())
+                }
+        }
     }
     
 }
@@ -109,4 +125,11 @@ struct AcronymsController: RouteCollection {
 struct AcronymCreateData: Content {
     let short: String
     let long: String
+}
+
+struct AcronymWithUser: Content {
+    let id: Int?
+    let short: String
+    let long: String
+    let user: User.Public
 }

@@ -8,6 +8,7 @@ struct UsersController: RouteCollection {
         usersRoute.get(use: getAllHandler)
         usersRoute.get(User.parameter, use: getHandler)
         usersRoute.get(User.parameter, "acronyms", use: getAcronymsHandler)
+        usersRoute.get("acronyms", use: getAllUsersWithAcronyms)
         
         let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
         let basicAuthGroup = usersRoute.grouped(basicAuthMiddleware)
@@ -51,14 +52,14 @@ struct UsersController: RouteCollection {
     }
     
     func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
-            let requestUser = try req.requireAuthenticated(User.self)
-            guard requestUser.userType == .admin else {
-              throw Abort(.forbidden)
-            }
-            return try req.parameters
-              .next(User.self)
-              .delete(on: req)
-              .transform(to: .noContent)
+        let requestUser = try req.requireAuthenticated(User.self)
+        guard requestUser.userType == .admin else {
+            throw Abort(.forbidden)
+        }
+        return try req.parameters
+            .next(User.self)
+            .delete(on: req)
+            .transform(to: .noContent)
     }
     
     func restoreHandler(_ req: Request)
@@ -80,10 +81,39 @@ struct UsersController: RouteCollection {
     
     func forceDeleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
         return try req.parameters
-          .next(User.self)
-          .flatMap(to: HTTPStatus.self) { user in
-            user.delete(force: true, on: req)
-              .transform(to: .noContent)
+            .next(User.self)
+            .flatMap(to: HTTPStatus.self) { user in
+                user.delete(force: true, on: req)
+                    .transform(to: .noContent)
         }
     }
+    
+    func getAllUsersWithAcronyms(_ req: Request)  -> Future<[UserWithAcronyms]> {
+        return User.query(on: req)
+          .all()
+          .flatMap(to: [UserWithAcronyms].self) { users in
+            // 2
+            try users.map { user in
+              // 3
+              try user.acronyms.query(on: req)
+              .all()
+              .map { acronyms in
+                // 4
+                UserWithAcronyms(
+                 id: user.id,
+                 name: user.name,
+                 username: user.username,
+                 acronyms: acronyms)
+              }
+            }.flatten(on: req)
+        }
+    }
+}
+
+
+struct UserWithAcronyms: Content {
+    let id: UUID?
+    let name: String
+    let username: String
+    let acronyms: [Acronym]
 }
