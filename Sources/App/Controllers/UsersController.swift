@@ -20,6 +20,7 @@ struct UsersController: RouteCollection {
         tokenAuthGroup.post(User.self, use: createHandler)
         tokenAuthGroup.delete(User.parameter, use: deleteHandler)
         tokenAuthGroup.post( UUID.parameter, "restore", use: restoreHandler)
+        tokenAuthGroup.delete(User.parameter, "force", use: forceDeleteHandler)
         
         
     }
@@ -72,5 +73,14 @@ struct UsersController: RouteCollection {
                     // 4
                     return user.restore(on: req).transform(to: .ok)
             }
+    }
+    
+    func forceDeleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        return try req.parameters
+          .next(User.self)
+          .flatMap(to: HTTPStatus.self) { user in
+            user.delete(force: true, on: req)
+              .transform(to: .noContent)
+        }
     }
 }
