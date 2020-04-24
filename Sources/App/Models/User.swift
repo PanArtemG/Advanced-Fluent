@@ -37,6 +37,17 @@ final class User: Codable {
 
 extension User: PostgreSQLUUIDModel {
     static let deletedAtKey: TimestampKey? = \.deleteAt
+    func willCreate(on conn: PostgreSQLConnection) throws -> Future<User> {
+        return User.query(on: conn)
+          .filter(\.username == self.username)
+          .count()
+          .map(to: User.self) { count in
+            guard count == 0 else {
+              throw BasicValidationError("Username already exists")
+            }
+            return self
+        }
+    }
 }
 extension User: Content {}
 
@@ -102,9 +113,3 @@ struct AdminUser: Migration {
 
 extension User: PasswordAuthenticatable {}
 extension User: SessionAuthenticatable {}
-
-//{
-//    "id": "34C8F820-5080-457D-95D3-2A1FA3080B46",
-//    "token": "YzxBy3ZNRce2aMoMVReA9g==",
-//    "userID": "5445AF1F-9ED4-4747-B837-9464AA78BDBC"
-//}
