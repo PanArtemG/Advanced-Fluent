@@ -11,13 +11,15 @@ final class User: Codable {
     var email: String
     var profilePicture: String?
     var deleteAt: Date?
+    var userType: UserType
     
-    init(name: String, username: String, password: String, email: String, profilePicture: String? = nil) {
+    init(name: String, username: String, password: String, email: String, profilePicture: String? = nil, userType: UserType = .standard) {
         self.name = name
         self.username = username
         self.password = password
         self.email = email
         self.profilePicture = profilePicture
+        self.userType = userType
     }
     
     final class Public: Codable {
@@ -89,7 +91,7 @@ struct AdminUser: Migration {
             fatalError("Failed to create admin user")
         }
         let user = User(name: "Admin", username: "admin", password: hashedPassword,
-                        email: "admin@localhost.local")
+                        email: "admin@localhost.local", userType: .admin)
         return user.save(on: connection).transform(to: ())
     }
     

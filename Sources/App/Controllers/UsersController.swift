@@ -50,12 +50,15 @@ struct UsersController: RouteCollection {
         return token.save(on: req)
     }
     
-    func deleteHandler(_ req: Request)
-        throws -> Future<HTTPStatus> {
+    func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
+            let requestUser = try req.requireAuthenticated(User.self)
+            guard requestUser.userType == .admin else {
+              throw Abort(.forbidden)
+            }
             return try req.parameters
-                .next(User.self)
-                .delete(on: req)
-                .transform(to: .noContent)
+              .next(User.self)
+              .delete(on: req)
+              .transform(to: .noContent)
     }
     
     func restoreHandler(_ req: Request)
