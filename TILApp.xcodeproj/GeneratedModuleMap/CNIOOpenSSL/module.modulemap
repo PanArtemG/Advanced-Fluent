@@ -1,0 +1,4 @@
+module CNIOOpenSSL {
+    umbrella "/Users/panartem/Developer/Study/Advanced-Fluent/.build/checkouts/swift-nio-ssl/Sources/CNIOOpenSSL/include"
+    export *
+}

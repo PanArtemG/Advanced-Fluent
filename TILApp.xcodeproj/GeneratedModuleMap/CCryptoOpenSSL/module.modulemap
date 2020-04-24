@@ -1,0 +1,4 @@
+module CCryptoOpenSSL {
+    umbrella "/Users/panartem/Developer/Study/Advanced-Fluent/.build/checkouts/crypto/Sources/CCryptoOpenSSL/include"
+    export *
+}
